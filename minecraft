@@ -1,0 +1,189 @@
+#!/bin/bash
+# /etc/init.d/minecraft
+
+# Parameter
+USERNAME='minecraft'
+MCPATH='/home/minecraft/familienserver/'
+BACKUPPATH='/home/minecraft/backup/'
+RAM='1G'
+FILENAME='server.jar'
+START="java -Xmn$RAM -Xmx$RAM -jar $FILENAME -nogui"
+SCREEN='minecraft.test'
+COMMAND="$1"
+PARAMETER="$@"
+ME=`whoami`
+
+DBUSER='minecraft'
+DB='minecraft'
+
+# Ausführen als Bennutzer
+as_user() {
+    if [ "$ME" == "$USERNAME" ]
+    then
+        bash -c "$1"
+    else
+        su - $USERNAME -c "$1"
+    fi
+}
+
+# Server Starten
+start() {
+    if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
+    then
+        echo 'Server läuft bereits'
+    else
+        echo 'Server wird gestartet'
+        
+        as_user "cd $MCPATH && screen -dmS $SCREEN $START"
+        sleep 20
+
+        if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
+        then
+            echo 'Server lädt'
+            sleep 31
+            echo 'Server sollte bereit sein'
+        else
+            echo 'Server konnte nicht gestartet werden'
+        fi
+    fi
+}
+
+
+# Server Stopen
+stop() {
+    if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
+    then
+        echo 'Der Server wird heruntergefahren'
+        
+        if [ "$COMMAND" == 'stop' ]
+        then
+            as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"say Server wird in 15 Sekunden heruntergefahren.\"\015'"
+        else
+            as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"say Server wird in 15 Sekunden neu gestartet.\"\015'"
+        fi        
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"save-all\"\015'"
+        sleep 15
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"stop\"\015'"        
+        sleep 20
+
+        if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
+        then
+            echo 'Server konnte nicht heruntergefahren werden'
+        else
+            echo 'Server ist heruntergefahren'
+        fi
+    else
+        echo 'Der Server läuft nicht'
+    fi
+}
+
+# Server Backup
+backup() {
+    echo "Backup vom Server wird gestartet."
+    
+    if [ -d $BACKUPPATH`date '+%Y-%m'` ]
+    then
+        echo ''
+    else
+    as_user "mkdir $BACKUPPATH`date '+%Y-%m'`"
+    fi
+
+    as_user "tar -czf $BACKUPPATH`date '+%Y-%m'`/`date "+%Y-%m-%d_%H%M"`.tar.gz $MCPATH"
+    #echo "Backup vom Server ist Fertig."
+}
+
+
+# Save OFF
+saveoff() {
+    if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
+    then
+        echo 'Server wird gespeichert'
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"say Server wird gespeichert\"\015'"
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"save-off\"\015'"
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"save-all\"\015'"
+        sync
+            sleep 20
+    else
+        echo 'Server läuft nicht'
+    fi
+}
+
+# Save ON
+saveon() {
+    if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
+    then
+        echo 'Server wurde gespeichert'
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"save-on\"\015'"
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"say Server wurde gespeichert\"\015'"
+    else
+        echo 'Server läuft nicht'
+    fi
+}
+
+# Welt Speichern
+save() {
+    if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
+    then
+        echo 'Welt wird gespeichert'
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"say Welt wird gespeichert...\"\015'"
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"save-all\"\015'"
+        sleep 20
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"say Welt wurde gespeichert\"\015'"
+    else
+        echo 'Server läuft nicht'
+    fi
+}
+
+# Server Say
+say() {
+    if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
+    then
+        echo 'Nachricht gesendet'
+        
+        # String Replace von "say"
+        MESSAGE=$(echo $PARAMETER|sed 's/say//g')
+
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"say $MESSAGE \"\015'"
+    else
+        echo 'Server läuft nicht'
+    fi
+}
+
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    backup)
+        saveoff
+        backup
+        saveon
+        ;;
+    save)
+        save
+        ;;
+    say)
+        say
+        ;;
+    status)
+        if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
+        then
+            echo "Server läuft."
+        else
+            echo "Server läuft nicht."
+        fi
+        ;;
+    *)
+        echo "Benutzung: service minecraft {start|stop|restart|save|backup|say|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
