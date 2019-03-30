@@ -13,9 +13,6 @@ COMMAND="$1"
 PARAMETER="$@"
 ME=`whoami`
 
-DBUSER='minecraft'
-DB='minecraft'
-
 # Ausführen als Bennutzer
 as_user() {
     if [ "$ME" == "$USERNAME" ]
