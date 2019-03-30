@@ -33,7 +33,7 @@ start() {
         echo 'Server läuft bereits'
     else
         echo 'Server wird gestartet'
-        
+
         as_user "cd $MCPATH && screen -dmS $SCREEN $START"
         sleep 20
 
@@ -54,16 +54,16 @@ stop() {
     if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
     then
         echo 'Der Server wird heruntergefahren'
-        
+
         if [ "$COMMAND" == 'stop' ]
         then
             as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"say Server wird in 15 Sekunden heruntergefahren.\"\015'"
         else
             as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"say Server wird in 15 Sekunden neu gestartet.\"\015'"
-        fi        
+        fi
         as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"save-all\"\015'"
         sleep 15
-        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"stop\"\015'"        
+        as_user "screen -p 0 -S $SCREEN -X eval 'stuff \"stop\"\015'"
         sleep 20
 
         if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
@@ -80,7 +80,7 @@ stop() {
 # Server Backup
 backup() {
     echo "Backup vom Server wird gestartet."
-    
+
     if [ -d $BACKUPPATH`date '+%Y-%m'` ]
     then
         echo ''
@@ -88,7 +88,7 @@ backup() {
     as_user "mkdir $BACKUPPATH`date '+%Y-%m'`"
     fi
 
-    as_user "tar -czf $BACKUPPATH`date '+%Y-%m'`/`date "+%Y-%m-%d_%H%M"`.tar.gz $MCPATH"
+    as_user "cd $MCPATH && tar -czf $BACKUPPATH/`date "+%Y-%m-%d_%H%M"`.tar.gz ."
     #echo "Backup vom Server ist Fertig."
 }
 
@@ -139,7 +139,7 @@ say() {
     if ps ax | grep -v grep | grep -v -i SCREEN | grep $FILENAME > /dev/null
     then
         echo 'Nachricht gesendet'
-        
+
         # String Replace von "say"
         MESSAGE=$(echo $PARAMETER|sed 's/say//g')
 
