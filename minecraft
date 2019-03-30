@@ -81,13 +81,6 @@ stop() {
 backup() {
     echo "Backup vom Server wird gestartet."
 
-    if [ -d $BACKUPPATH`date '+%Y-%m'` ]
-    then
-        echo ''
-    else
-    as_user "mkdir $BACKUPPATH`date '+%Y-%m'`"
-    fi
-
     as_user "cd $MCPATH && tar -czf $BACKUPPATH/`date "+%Y-%m-%d_%H%M"`.tar.gz ."
     #echo "Backup vom Server ist Fertig."
 }
